@@ -12,6 +12,49 @@ import {
   ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 
+const InputWrapper = ({ label, name, type = 'text', icon: Icon, rightIcon, value, onChange, errors, placeholder }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+      {label}
+    </label>
+    <div className="relative">
+      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+        <Icon className="w-5 h-5 text-gray-400" />
+      </div>
+      <input
+        type={type}
+        name={name}
+        id={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={`input-field pl-10 ${rightIcon ? 'pr-10' : ''} ${
+          errors[name] ? 'border-red-400 dark:border-red-500 focus:ring-red-400' : ''
+        }`}
+      />
+      {rightIcon && (
+        <button
+          type="button"
+          onClick={rightIcon.toggle}
+          className="absolute inset-y-0 right-3 flex items-center"
+        >
+          {rightIcon.show ? (
+            <EyeSlashIcon className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+          ) : (
+            <EyeIcon className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+          )}
+        </button>
+      )}
+    </div>
+    {errors[name] && (
+      <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+        <ExclamationCircleIcon className="w-4 h-4 shrink-0" />
+        {errors[name]}
+      </p>
+    )}
+  </div>
+);
+
 const Signup = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -57,63 +100,24 @@ const Signup = () => {
     }
 
     setLoading(true);
+    setApiError(''); // Clear previous errors
     try {
       const { data } = await axios.post('http://localhost:5000/api/auth/signup', {
         name: form.name.trim(),
         email: form.email.trim().toLowerCase(),
         password: form.password,
       });
+      console.log('Signup success:', data);
       login(data.user, data.token);
       navigate('/dashboard');
     } catch (err) {
-      setApiError(err.response?.data?.message || 'Something went wrong. Please try again.');
+      console.error('Signup error details:', err.response || err);
+      const message = err.response?.data?.message || 'Connection error. Please ensure the server is running.';
+      setApiError(message);
     } finally {
       setLoading(false);
     }
   };
-
-  const InputWrapper = ({ label, name, type = 'text', icon: Icon, rightIcon, value, placeholder }) => (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-        {label}
-      </label>
-      <div className="relative">
-        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-          <Icon className="w-5 h-5 text-gray-400" />
-        </div>
-        <input
-          type={type}
-          name={name}
-          id={name}
-          value={value}
-          onChange={handleChange}
-          placeholder={placeholder}
-          className={`input-field pl-10 ${rightIcon ? 'pr-10' : ''} ${
-            errors[name] ? 'border-red-400 dark:border-red-500 focus:ring-red-400' : ''
-          }`}
-        />
-        {rightIcon && (
-          <button
-            type="button"
-            onClick={rightIcon.toggle}
-            className="absolute inset-y-0 right-3 flex items-center"
-          >
-            {rightIcon.show ? (
-              <EyeSlashIcon className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
-            ) : (
-              <EyeIcon className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
-            )}
-          </button>
-        )}
-      </div>
-      {errors[name] && (
-        <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
-          <ExclamationCircleIcon className="w-4 h-4 shrink-0" />
-          {errors[name]}
-        </p>
-      )}
-    </div>
-  );
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 animate-fade-in">
@@ -148,6 +152,8 @@ const Signup = () => {
               name="name"
               icon={UserIcon}
               value={form.name}
+              onChange={handleChange}
+              errors={errors}
               placeholder="John Doe"
             />
             <InputWrapper
@@ -156,6 +162,8 @@ const Signup = () => {
               type="email"
               icon={EnvelopeIcon}
               value={form.email}
+              onChange={handleChange}
+              errors={errors}
               placeholder="john@example.com"
             />
             <InputWrapper
@@ -164,6 +172,8 @@ const Signup = () => {
               type={showPwd ? 'text' : 'password'}
               icon={LockClosedIcon}
               value={form.password}
+              onChange={handleChange}
+              errors={errors}
               placeholder="Minimum 6 characters"
               rightIcon={{ toggle: () => setShowPwd(p => !p), show: showPwd }}
             />
@@ -173,6 +183,8 @@ const Signup = () => {
               type={showConfirm ? 'text' : 'password'}
               icon={LockClosedIcon}
               value={form.confirmPassword}
+              onChange={handleChange}
+              errors={errors}
               placeholder="Re-enter your password"
               rightIcon={{ toggle: () => setShowConfirm(p => !p), show: showConfirm }}
             />
