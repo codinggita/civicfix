@@ -42,6 +42,7 @@ const Navbar = () => {
               <>
                 <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
                 <NavLink to="/report-issue" className={linkClass}>Report Issue</NavLink>
+                <NavLink to="/profile" className={linkClass}>My Profile</NavLink>
                 <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
                   Hi, {user?.name?.split(' ')[0]}
                 </span>
