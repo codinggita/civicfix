@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const issueRoutes = require('./routes/issues');
+const userRoutes = require('./routes/users');
 
 const app = express();
 
@@ -15,9 +16,16 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// ─── Logging Middleware ────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/issues', issueRoutes);
+app.use('/api/users', userRoutes);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {

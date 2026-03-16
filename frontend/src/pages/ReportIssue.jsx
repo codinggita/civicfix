@@ -12,6 +12,50 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 
+const InputWrapper = ({ label, name, type = 'text', icon: Icon, value, onChange, errors, placeholder, isTextArea = false }) => (
+  <div>
+    <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+      {label}
+    </label>
+    <div className="relative">
+      <div className={`absolute ${isTextArea ? 'top-3' : 'inset-y-0'} left-3 flex items-center pointer-events-none`}>
+        <Icon className="w-5 h-5 text-gray-400" />
+      </div>
+      {isTextArea ? (
+        <textarea
+          name={name}
+          id={name}
+          rows="4"
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`input-field pl-10 resize-none ${
+            errors[name] ? 'border-red-400 dark:border-red-500 focus:ring-red-400' : ''
+          }`}
+        />
+      ) : (
+        <input
+          type={type}
+          name={name}
+          id={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`input-field pl-10 ${
+            errors[name] ? 'border-red-400 dark:border-red-500 focus:ring-red-400' : ''
+          }`}
+        />
+      )}
+    </div>
+    {errors[name] && (
+      <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+        <ExclamationCircleIcon className="w-4 h-4 shrink-0" />
+        {errors[name]}
+      </p>
+    )}
+  </div>
+);
+
 const ReportIssue = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -106,50 +150,6 @@ const ReportIssue = () => {
     }
   };
 
-  const InputWrapper = ({ label, name, type = 'text', icon: Icon, value, placeholder, isTextArea = false }) => (
-    <div>
-      <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-        {label}
-      </label>
-      <div className="relative">
-        <div className={`absolute ${isTextArea ? 'top-3' : 'inset-y-0'} left-3 flex items-center pointer-events-none`}>
-          <Icon className="w-5 h-5 text-gray-400" />
-        </div>
-        {isTextArea ? (
-          <textarea
-            name={name}
-            id={name}
-            rows="4"
-            value={value}
-            onChange={handleChange}
-            placeholder={placeholder}
-            className={`input-field pl-10 resize-none ${
-              errors[name] ? 'border-red-400 dark:border-red-500 focus:ring-red-400' : ''
-            }`}
-          />
-        ) : (
-          <input
-            type={type}
-            name={name}
-            id={name}
-            value={value}
-            onChange={handleChange}
-            placeholder={placeholder}
-            className={`input-field pl-10 ${
-              errors[name] ? 'border-red-400 dark:border-red-500 focus:ring-red-400' : ''
-            }`}
-          />
-        )}
-      </div>
-      {errors[name] && (
-        <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
-          <ExclamationCircleIcon className="w-4 h-4 shrink-0" />
-          {errors[name]}
-        </p>
-      )}
-    </div>
-  );
-
   return (
     <div className="min-h-screen py-12 px-4 animate-fade-in relative overflow-hidden">
       {/* Decorative Blobs */}
@@ -193,6 +193,8 @@ const ReportIssue = () => {
                   name="title"
                   icon={TagIcon}
                   value={form.title}
+                  onChange={handleChange}
+                  errors={errors}
                   placeholder="e.g., Pothole on High Street, Broken Streetlight"
                 />
 
@@ -202,6 +204,8 @@ const ReportIssue = () => {
                   icon={ChatBubbleLeftRightIcon}
                   isTextArea={true}
                   value={form.description}
+                  onChange={handleChange}
+                  errors={errors}
                   placeholder="Describe the issue in detail so authorities can understand it better..."
                 />
 
@@ -210,6 +214,8 @@ const ReportIssue = () => {
                   name="location"
                   icon={MapPinIcon}
                   value={form.location}
+                  onChange={handleChange}
+                  errors={errors}
                   placeholder="e.g., Near City Park, Main Road Intersection"
                 />
 

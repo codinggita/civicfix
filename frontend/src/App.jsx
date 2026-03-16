@@ -9,6 +9,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import ReportIssue from './pages/ReportIssue';
 import IssueDetail from './pages/IssueDetail';
+import Profile from './pages/Profile';
 
 const App = () => {
   return (
@@ -43,6 +44,14 @@ const App = () => {
                   element={
                     <ProtectedRoute>
                       <ReportIssue />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
                     </ProtectedRoute>
                   }
                 />
