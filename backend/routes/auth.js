@@ -50,6 +50,10 @@ router.post('/signup', async (req, res) => {
     });
   } catch (err) {
     console.error('Signup error:', err);
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(val => val.message);
+      return res.status(400).json({ message: messages[0] });
+    }
     res.status(500).json({ message: 'Server error. Please try again.' });
   }
 });
