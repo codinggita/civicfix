@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { MapPinIcon, CalendarIcon, UserIcon, ArrowPathIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -34,7 +35,8 @@ const IssueCard = ({ issue, onStatusUpdate, onDelete }) => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (e) => {
+    e.stopPropagation(); // Prevent navigation when clicking delete
     if (!window.confirm('Are you sure you want to delete this issue? This action cannot be undone.')) return;
     
     setDeleting(true);
@@ -64,7 +66,9 @@ const IssueCard = ({ issue, onStatusUpdate, onDelete }) => {
   const isReporter = user?.id === issue.reportedBy?._id || user?._id === issue.reportedBy?._id || user?.id === issue.reportedBy;
 
   return (
-    <div className="card border-0 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full bg-white dark:bg-gray-900/50 backdrop-blur-sm overflow-hidden">
+    <div className="card border-0 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full bg-white dark:bg-gray-900/50 backdrop-blur-sm overflow-hidden relative">
+      <Link to={`/issues/${issue._id}`} className="absolute inset-0 z-0" aria-label="View Issue Details" />
+      
       {/* Image Display */}
       {issue.imageUrl && (
         <div className="relative h-48 overflow-hidden group/img">
@@ -77,7 +81,7 @@ const IssueCard = ({ issue, onStatusUpdate, onDelete }) => {
         </div>
       )}
 
-      <div className="p-6 flex flex-col flex-1">
+      <div className="p-6 flex flex-col flex-1 relative z-10 pointer-events-none">
         <div className="flex justify-between items-start gap-4 mb-4">
           <div className="flex-1">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-civic-600 transition-colors">
@@ -89,7 +93,7 @@ const IssueCard = ({ issue, onStatusUpdate, onDelete }) => {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pointer-events-auto">
             {isAdmin ? (
               <div className="relative group/status">
                 <select
