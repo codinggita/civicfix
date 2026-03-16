@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import {
@@ -8,15 +8,19 @@ import {
   ExclamationCircleIcon,
   CheckCircleIcon,
   ClockIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  CameraIcon
 } from '@heroicons/react/24/outline';
 import IssueCard from '../components/IssueCard';
 
 const Profile = () => {
-  const { user, token } = useAuth();
+  const { user: authUser, token, updateUser } = useAuth();
+  const fileInputRef = useRef(null);
+  
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -33,6 +37,37 @@ const Profile = () => {
     };
     fetchProfile();
   }, [token]);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const { data } = await axios.put('/api/users/profile', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      // Update local profile data
+      setProfileData(prev => ({ ...prev, user: { ...prev.user, avatar: data.avatar } }));
+      // Update global auth context
+      updateUser({ avatar: data.avatar });
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to upload avatar.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleUpdateIssue = (updatedIssue) => {
     setProfileData(prev => ({
@@ -72,7 +107,7 @@ const Profile = () => {
     );
   }
 
-  const { stats, issues } = profileData;
+  const { stats, issues, user: profileUser } = profileData;
 
   const statCards = [
     { label: 'Total Reports', val: stats.total, icon: ShieldCheckIcon, color: 'text-civic-600', bg: 'bg-civic-50 dark:bg-civic-900/20' },
@@ -97,29 +132,52 @@ const Profile = () => {
           </div>
           
           <div className="relative flex flex-col md:flex-row items-center gap-8">
-            <div className="relative">
-              <div className="w-32 h-32 bg-white/10 p-1 rounded-3xl backdrop-blur-md shadow-2xl relative z-10">
-                <div className="w-full h-full bg-civic-600 rounded-2xl flex items-center justify-center">
-                  <UserCircleIcon className="w-20 h-20 text-white" />
+            <div className="relative group">
+              <div className="w-32 h-32 bg-white/10 p-1 rounded-3xl backdrop-blur-md shadow-2xl relative z-10 transition-transform group-hover:scale-[1.02]">
+                <div className="w-full h-full bg-civic-600 rounded-2xl flex items-center justify-center overflow-hidden">
+                  {profileUser.avatar ? (
+                    <img src={profileUser.avatar} alt={profileUser.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <UserCircleIcon className="w-20 h-20 text-white" />
+                  )}
+                  
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-20">
+                      <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-500 border-4 border-gray-900 rounded-full z-20 shadow-lg flex items-center justify-center">
-                <CheckCircleIcon className="w-6 h-6 text-white" />
-              </div>
+              
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute -bottom-2 -right-2 w-10 h-10 bg-civic-500 hover:bg-civic-600 border-4 border-gray-900 rounded-full z-20 shadow-lg flex items-center justify-center text-white transition-all hover:scale-110 disabled:opacity-50"
+              >
+                <CameraIcon className="w-5 h-5" />
+              </button>
+              
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleAvatarChange} 
+                className="hidden" 
+                accept="image/*" 
+              />
             </div>
 
             <div className="text-center md:text-left">
               <h1 className="text-4xl font-black text-white tracking-tight mb-2">
-                {profileData.user.name}
+                {profileUser.name}
               </h1>
               <div className="flex flex-wrap justify-center md:justify-start gap-4">
                 <div className="flex items-center gap-2 text-gray-300 bg-white/5 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/10">
                   <EnvelopeIcon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{profileData.user.email}</span>
+                  <span className="text-sm font-medium">{profileUser.email}</span>
                 </div>
                 <div className="flex items-center gap-2 text-civic-300 bg-civic-400/10 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-civic-400/20">
                   <ShieldCheckIcon className="w-4 h-4" />
-                  <span className="text-sm font-bold uppercase tracking-wider">{profileData.user.role} Account</span>
+                  <span className="text-sm font-bold uppercase tracking-wider">{profileUser.role} Account</span>
                 </div>
               </div>
             </div>

@@ -43,9 +43,18 @@ const Navbar = () => {
                 <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
                 <NavLink to="/report-issue" className={linkClass}>Report Issue</NavLink>
                 <NavLink to="/profile" className={linkClass}>My Profile</NavLink>
-                <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
-                  Hi, {user?.name?.split(' ')[0]}
-                </span>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 ml-1">
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover ring-2 ring-civic-400" />
+                  ) : (
+                    <div className="w-7 h-7 bg-civic-100 dark:bg-civic-900 flex items-center justify-center rounded-full">
+                      <ShieldCheckIcon className="w-4 h-4 text-civic-600" />
+                    </div>
+                  )}
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200 hidden sm:inline truncate max-w-[80px]">
+                    {user?.name?.split(' ')[0]}
+                  </span>
+                </div>
                 <button
                   onClick={handleLogout}
                   className="px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"

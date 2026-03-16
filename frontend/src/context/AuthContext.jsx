@@ -24,6 +24,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('civicfix_user', JSON.stringify(userData));
   };
 
+  const updateUser = (updatedUserData) => {
+    const newUser = { ...user, ...updatedUserData };
+    setUser(newUser);
+    localStorage.setItem('civicfix_user', JSON.stringify(newUser));
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -32,7 +38,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, login, updateUser, logout, loading, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

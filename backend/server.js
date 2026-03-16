@@ -16,6 +16,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// ─── Logging Middleware ────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/issues', issueRoutes);
