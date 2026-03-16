@@ -29,4 +29,18 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// ─── GET /api/issues ───────────────────────────────────────────────────────────
+// Get all civic issues
+router.get('/', async (req, res) => {
+  try {
+    const issues = await Issue.find()
+      .populate('reportedBy', 'name')
+      .sort({ createdAt: -1 });
+    res.status(200).json(issues);
+  } catch (err) {
+    console.error('Error fetching issues:', err);
+    res.status(500).json({ message: 'Server error. Could not fetch issues.' });
+  }
+});
+
 module.exports = router;
