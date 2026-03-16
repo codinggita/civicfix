@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import ReportIssue from './pages/ReportIssue';
+import IssueDetail from './pages/IssueDetail';
 
 const App = () => {
   return (
@@ -26,6 +27,14 @@ const App = () => {
                   element={
                     <ProtectedRoute>
                       <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/issues/:id"
+                  element={
+                    <ProtectedRoute>
+                      <IssueDetail />
                     </ProtectedRoute>
                   }
                 />

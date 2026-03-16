@@ -60,6 +60,26 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ─── GET /api/issues/:id ──────────────────────────────────────────────────────
+// Get a single civic issue by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const issue = await Issue.findById(req.params.id).populate('reportedBy', 'name email');
+    
+    if (!issue) {
+      return res.status(404).json({ message: 'Issue not found.' });
+    }
+
+    res.status(200).json(issue);
+  } catch (err) {
+    console.error('Error fetching issue details:', err);
+    if (err.kind === 'ObjectId') {
+      return res.status(400).json({ message: 'Invalid issue ID.' });
+    }
+    res.status(500).json({ message: 'Server error. Could not fetch issue details.' });
+  }
+});
+
 // ─── PUT /api/issues/:id/status ───────────────────────────────────────────────
 // Update issue status (Admin only)
 // ─── PUT /api/issues/:id/status ───────────────────────────────────────────────
