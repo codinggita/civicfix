@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPinIcon, CalendarIcon, UserIcon, ArrowPathIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, CalendarIcon, UserIcon, ArrowPathIcon, TrashIcon, ShieldCheckIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
@@ -15,6 +15,13 @@ const IssueCard = ({ issue, onStatusUpdate, onDelete }) => {
     'Resolved': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800',
   };
 
+  const priorityColors = {
+    'Low': 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700',
+    'Medium': 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-100 dark:border-blue-900/30',
+    'High': 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 border-orange-100 dark:border-orange-900/30',
+    'Critical': 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-100 dark:border-red-900/30',
+  };
+
   const statusOptions = ['Pending', 'In Progress', 'Resolved'];
 
   const handleStatusChange = async (newStatus) => {
@@ -22,7 +29,7 @@ const IssueCard = ({ issue, onStatusUpdate, onDelete }) => {
     setUpdating(true);
     try {
       const { data } = await axios.put(
-        `/api/issues/${issue._id}/status`,
+        `/api/issues/${issue._id}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -78,6 +85,12 @@ const IssueCard = ({ issue, onStatusUpdate, onDelete }) => {
             className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity" />
+          
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
+            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border backdrop-blur-md shadow-sm uppercase tracking-wider ${priorityColors[issue.priority] || priorityColors['Low']}`}>
+              {issue.priority || 'Low'}
+            </span>
+          </div>
         </div>
       )}
 
@@ -121,18 +134,29 @@ const IssueCard = ({ issue, onStatusUpdate, onDelete }) => {
             )}
 
             {(isAdmin || isReporter) && (
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all disabled:opacity-50"
-                title="Delete Issue"
-              >
-                {deleting ? (
-                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
-                ) : (
-                  <TrashIcon className="w-5 h-5" />
+              <div className="flex items-center gap-1">
+                {isAdmin && (
+                  <Link
+                    to={`/issues/${issue._id}`}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-civic-600 hover:bg-civic-50 dark:hover:bg-civic-900/20 transition-all"
+                    title="Edit Issue"
+                  >
+                    <PencilSquareIcon className="w-5 h-5" />
+                  </Link>
                 )}
-              </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all disabled:opacity-50"
+                  title="Delete Issue"
+                >
+                  {deleting ? (
+                    <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <TrashIcon className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -140,6 +164,13 @@ const IssueCard = ({ issue, onStatusUpdate, onDelete }) => {
         <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 line-clamp-3 flex-1 leading-relaxed">
           {issue.description}
         </p>
+
+        {issue.officialResponse?.text && (
+          <div className="mb-4 py-2 px-3 bg-civic-50 dark:bg-civic-900/20 border border-civic-100 dark:border-civic-900/30 rounded-xl flex items-center gap-2">
+            <ShieldCheckIcon className="w-4 h-4 text-civic-600 dark:text-civic-400" />
+            <span className="text-[11px] font-bold text-civic-700 dark:text-civic-300 uppercase tracking-tight">Official Response Received</span>
+          </div>
+        )}
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800 mt-auto">
           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 overflow-hidden">

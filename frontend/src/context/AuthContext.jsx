@@ -17,11 +17,12 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (userData, jwtToken) => {
+  const login = async (userData, jwtToken) => {
     setUser(userData);
     setToken(jwtToken);
     localStorage.setItem('civicfix_token', jwtToken);
     localStorage.setItem('civicfix_user', JSON.stringify(userData));
+    return true;
   };
 
   const updateUser = (updatedUserData) => {
