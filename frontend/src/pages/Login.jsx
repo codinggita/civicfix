@@ -50,8 +50,8 @@ const Login = () => {
         email: form.email.trim().toLowerCase(),
         password: form.password,
       });
-      login(data.user, data.token);
-      navigate('/dashboard');
+      await login(data.user, data.token);
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setApiError(err.response?.data?.message || 'Invalid email or password.');
     } finally {

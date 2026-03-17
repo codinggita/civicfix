@@ -32,18 +32,48 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
   }
 });
 
-// ─── GET /api/issues ───────────────────────────────────────────────────────────
-// Get all civic issues (with pagination)
+// Get all civic issues (with pagination & filters)
 router.get('/', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 9;
     const skip = (page - 1) * limit;
+    const { status, unresponded } = req.query;
 
-    const totalIssues = await Issue.countDocuments();
+    const query = {};
+    if (status && status !== 'All') query.status = status;
+    if (unresponded === 'true') {
+      query.$or = [
+        { officialResponse: { $exists: false } },
+        { 'officialResponse.text': '' }
+      ];
+    }
+
+    const totalIssues = await Issue.countDocuments(query);
     const totalPages = Math.ceil(totalIssues / limit);
 
-    const issues = await Issue.find()
+    // Get counts for dashboard stats (all issues, ignore filters for this part to show overview)
+    const stats = await Issue.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const statusCounts = {
+      Pending: 0,
+      'In Progress': 0,
+      Resolved: 0
+    };
+    stats.forEach(s => {
+      if (statusCounts.hasOwnProperty(s._id)) {
+        statusCounts[s._id] = s.count;
+      }
+    });
+
+    const issues = await Issue.find(query)
       .populate('reportedBy', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -53,7 +83,8 @@ router.get('/', async (req, res) => {
       issues,
       totalPages,
       currentPage: page,
-      totalIssues
+      totalIssues,
+      statusCounts
     });
   } catch (err) {
     console.error('Error fetching issues:', err);
@@ -85,27 +116,43 @@ router.get('/:id', async (req, res) => {
 // Update issue status (Admin only)
 // ─── PUT /api/issues/:id/status ───────────────────────────────────────────────
 // Update issue status (Admin only)
-router.put('/:id/status', auth, admin, async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, title, description, officialResponse, priority } = req.body;
     const { id } = req.params;
 
-    if (!['Pending', 'In Progress', 'Resolved'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status value.' });
+    const issue = await Issue.findById(id);
+    if (!issue) return res.status(404).json({ message: 'Issue not found.' });
+
+    const isAdmin = req.user.role === 'admin';
+    const isReporter = issue.reportedBy.toString() === req.user._id.toString();
+
+    // Permissions: Admins can update anything. Reporters can update title/description (if still pending).
+    if (!isAdmin && !isReporter) {
+      return res.status(403).json({ message: 'Access denied.' });
+    }
+
+    const updateData = {};
+    if (status && isAdmin) updateData.status = status;
+    if (priority && isAdmin) updateData.priority = priority;
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    
+    if (officialResponse && isAdmin) {
+      updateData.officialResponse = {
+        text: officialResponse,
+        respondedAt: new Date(),
+        respondedBy: req.user._id
+      };
     }
 
     const updatedIssue = await Issue.findByIdAndUpdate(
       id,
-      { status },
+      { $set: updateData },
       { new: true }
-    ).populate('reportedBy', 'name email');
+    ).populate('reportedBy', 'name email').populate('officialResponse.respondedBy', 'name');
 
-    if (!updatedIssue) {
-      return res.status(404).json({ message: 'Issue not found.' });
-    }
-
-    // Trigger Email Notification (Async)
-    if (updatedIssue.reportedBy && updatedIssue.reportedBy.email) {
+    if (status && isAdmin && updatedIssue.reportedBy?.email) {
       sendStatusUpdateEmail(
         updatedIssue.reportedBy.email,
         updatedIssue.reportedBy.name,
@@ -116,8 +163,8 @@ router.put('/:id/status', auth, admin, async (req, res) => {
 
     res.status(200).json(updatedIssue);
   } catch (err) {
-    console.error('Error updating status:', err);
-    res.status(500).json({ message: 'Server error. Could not update status.' });
+    console.error('Error updating issue:', err);
+    res.status(500).json({ message: 'Server error. Could not update issue.' });
   }
 });
 

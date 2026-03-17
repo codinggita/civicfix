@@ -28,6 +28,16 @@ const issueSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  priority: {
+    type: String,
+    enum: ['Low', 'Medium', 'High', 'Critical'],
+    default: 'Low',
+  },
+  officialResponse: {
+    text: { type: String, default: '' },
+    respondedAt: { type: Date },
+    respondedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  },
   createdAt: {
     type: Date,
     default: Date.now,

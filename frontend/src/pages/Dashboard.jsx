@@ -22,20 +22,28 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [filterPriority, setFilterPriority] = useState('All');
   
   // Pagination State
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalIssues, setTotalIssues] = useState(0);
+  const [statusCounts, setStatusCounts] = useState({ Pending: 0, 'In Progress': 0, Resolved: 0 });
+  const [showUnresponded, setShowUnresponded] = useState(false);
 
   useEffect(() => {
     const fetchIssues = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.get(`/api/issues?page=${page}&limit=6`);
+        let url = `/api/issues?page=${page}&limit=6&status=${filterStatus}`;
+        if (filterPriority !== 'All') url += `&priority=${filterPriority}`;
+        if (showUnresponded) url += '&unresponded=true';
+        
+        const { data } = await axios.get(url);
         setIssues(data.issues);
         setTotalPages(data.totalPages);
         setTotalIssues(data.totalIssues);
+        if (data.statusCounts) setStatusCounts(data.statusCounts);
       } catch (err) {
         setError('Failed to load issues. Please try again later.');
       } finally {
@@ -43,7 +51,7 @@ const Dashboard = () => {
       }
     };
     fetchIssues();
-  }, [page]);
+  }, [page, filterStatus, filterPriority, showUnresponded]);
 
   useEffect(() => {
     setPage(1);
@@ -54,15 +62,18 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  // Client-side filtering (for simplicity on the current page)
+  // Client-side search (for speed), but status filter is now server-side
   const filteredIssues = issues.filter(issue => {
-    const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         issue.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'All' || issue.status === filterStatus;
-    return matchesSearch && matchesFilter;
+    return issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           issue.description.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const stats = [
+  const isAdmin = user?.role === 'admin';
+  const stats = isAdmin ? [
+    { label: 'Pending', val: statusCounts.Pending, color: 'text-yellow-600' },
+    { label: 'In Progress', val: statusCounts['In Progress'], color: 'text-blue-600' },
+    { label: 'Resolved', val: statusCounts.Resolved, color: 'text-green-600' },
+  ] : [
     { label: 'Total Reports', val: totalIssues, color: 'text-civic-600' },
     { label: 'Displaying', val: issues.length, color: 'text-indigo-600' },
     { label: 'Current Page', val: `${page}/${totalPages}`, color: 'text-amber-600' },
@@ -91,7 +102,7 @@ const Dashboard = () => {
                 <UserCircleIcon className="w-10 h-10 text-white" />
               </div>
               <div>
-                <p className="text-civic-100 text-sm font-medium">Citizen Dashboard</p>
+                <p className="text-civic-100 text-sm font-medium">{isAdmin ? 'Authority Control Center' : 'Citizen Dashboard'}</p>
                 <h1 className="text-3xl font-bold text-white tracking-tight">{user?.name || 'Citizen'}</h1>
                 <p className="text-civic-200 text-sm">{user?.email}{user?.role === 'admin' && <span className="ml-2 px-2 py-0.5 bg-white/20 rounded text-[10px] uppercase font-bold tracking-widest tracking-tighter">Admin</span>}</p>
               </div>
@@ -148,18 +159,47 @@ const Dashboard = () => {
             </div>
 
             {/* Filter */}
-            <div className="relative w-full sm:w-48">
-              <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="input-field pl-10 h-12 appearance-none"
-              >
-                <option value="All">All Status</option>
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Resolved">Resolved</option>
-              </select>
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative flex-1">
+                <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="input-field pl-10 h-12 appearance-none"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Resolved">Resolved</option>
+                </select>
+              </div>
+
+              <div className="relative flex-1">
+                <ShieldCheckIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                <select
+                  value={filterPriority}
+                  onChange={(e) => setFilterPriority(e.target.value)}
+                  className="input-field pl-10 h-12 appearance-none"
+                >
+                  <option value="All">All Priorities</option>
+                  <option value="Low">Low Priority</option>
+                  <option value="Medium">Medium Priority</option>
+                  <option value="High">High Priority</option>
+                  <option value="Critical">Critical Priority</option>
+                </select>
+              </div>
+
+              {isAdmin && (
+                <label className="flex items-center gap-3 px-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl cursor-pointer hover:border-civic-400 transition-all select-none whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    checked={showUnresponded}
+                    onChange={(e) => setShowUnresponded(e.target.checked)}
+                    className="w-5 h-5 rounded border-gray-300 text-civic-600 focus:ring-civic-500"
+                  />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Unresponded</span>
+                </label>
+              )}
             </div>
           </div>
         </div>

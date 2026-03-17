@@ -107,9 +107,12 @@ const Signup = () => {
         email: form.email.trim().toLowerCase(),
         password: form.password,
       });
-      console.log('Signup success:', data);
-      login(data.user, data.token);
-      navigate('/dashboard');
+      console.log('Signup success. Updating auth state...');
+      await login(data.user, data.token);
+      
+      // Give state a moment to propagate before nav if needed, 
+      // but usually navigate is fine. Let's redirect...
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error('Signup error details:', err.response || err);
       const message = err.response?.data?.message || 'Connection error. Please ensure the server is running.';
